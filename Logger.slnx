@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Logger/Logger.csproj" />
+  <Project Path="LoggerTest/LoggerTest.csproj" Id="0776974e-6dce-4266-8057-f06d9172506f" />
 </Solution>

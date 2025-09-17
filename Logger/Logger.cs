@@ -1,4 +1,7 @@
 ﻿using System.Data;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Cristiano3120.Logging;
 
@@ -7,7 +10,7 @@ public partial class Logger
     private readonly Lock _lock = new();
     private readonly LoggerSettings _loggerSettings;
     private readonly string _currentFile = "";
-    private readonly Dictionary<Type, Action> _filterAtrributes;
+    private readonly Dictionary<Type, Action<PropertyInfo, JsonNode>> _filterAttributes;
 
     public Logger() : this(new LoggerSettings())
     { }
@@ -16,31 +19,31 @@ public partial class Logger
     {
         _loggerSettings = loggerSettings;
         _currentFile = MaintainLoggingSystem();
-        _filterAtrributes = new();
+        _filterAttributes = [];
         Write(LoggerParams.NoNewLine, LogLevel.Debug, "Logger initialized");
     }
 
     /// <summary>
     /// Associates an action with a specified attribute type to be used as a filter.
+    /// 
+    /// <para>
+    /// <c>Example:</c> <br></br>
+    /// <![CDATA[
+    /// logger.AddAttributeToFilter<FilterAtrribute>(static (prop, jsonNode) =>
+    /// {
+    ///     FilterAtrribute? filterAtrribute = prop.GetCustomAttribute<FilterAtrribute>();
+    ///     _ = (jsonNode?[prop.Name] = filterAtrribute?.FilterSymbol);
+    /// });
+    /// ]]>
+    /// </para>
     /// </summary>
     /// <remarks>If an action is already associated with the specified attribute type, it will be replaced by
     /// the new action.</remarks>
     /// <typeparam name="TAttribute">The type of attribute to associate with the filter action. Must derive from <see cref="Attribute"/>.</typeparam>
     /// <param name="action">The action to execute when the specified attribute type is encountered. Cannot be null.</param>
-    public void AddAttributeToFilter<TAttribute>(Action action) where TAttribute : Attribute
+    public void AddAttributeToFilter<TAttribute>(Action<PropertyInfo, JsonNode> action) where TAttribute : Attribute
     {
-        _filterAtrributes[typeof(TAttribute)] = action;
-    }
-
-    /// <summary>
-    /// Invokes the callback action associated with the current attribute type, if one is registered.
-    /// </summary>
-    private void ExecuteCallback(Attribute attr)
-    {
-        if (_filterAtrributes.TryGetValue(attr.GetType(), out Action? action))
-        {
-            action();
-        }
+        _filterAttributes[typeof(TAttribute)] = action;
     }
 
     private string MaintainLoggingSystem()
@@ -89,7 +92,7 @@ public partial class Logger
     /// <param name="loggerParams">The logging parameters that define the context and configuration for the log entry. Cannot be null.</param>
     /// <param name="message">The informational message to log. Cannot be null or empty.</param>
     /// <param name="callerInfos">Optional information about the caller, such as file name, line number, or member name. May be null.</param>
-    public void LogInformation(LoggerParams loggerParams, string message, CallerInfos callerInfos = null)
+    public void LogInformation(LoggerParams loggerParams, string message, CallerInfos? callerInfos = null)
     {
         Write(loggerParams, LogLevel.Information, message, callerInfos);
     }
@@ -101,7 +104,7 @@ public partial class Logger
     /// <param name="message">The warning message to log. Cannot be null or empty.</param>
     /// <param name="callerInfos">Optional information about the caller, such as file name or line number, to include with the log entry. May be
     /// null.</param>
-    public void LogWarning(LoggerParams loggerParams, string message, CallerInfos callerInfos = null)
+    public void LogWarning(LoggerParams loggerParams, string message, CallerInfos? callerInfos = null)
     {
         Write(loggerParams, LogLevel.Warning, message, callerInfos);
     }
@@ -113,15 +116,52 @@ public partial class Logger
     /// <param name="message">The message to include in the debug log entry. Cannot be null.</param>
     /// <param name="callerInfos">Optional information about the caller, such as file name or line number, to include in the log entry. May be
     /// null.</param>
-    public void LogDebug(LoggerParams loggerParams, string message, CallerInfos callerInfos = null)
+    public void LogDebug(LoggerParams loggerParams, string message, CallerInfos? callerInfos = null)
     {
         Write(loggerParams, LogLevel.Warning, message, callerInfos);
     }
 
-    public void LogHttpPayload(LoggerParams loggerParams, Type dataType, PayloadType payloadType, HttpRequestType httpRequestType)
+    public void LogHttpPayload<TOutput>(LoggerParams loggerParams, PayloadType payloadType, 
+        HttpRequestType httpRequestType, string content)
     {
-        //Check mithilfe des datatypes ob die klasse n attribute hat das in der _filter... ist
-        //Falls ja remove das ausm json
+        JsonNode? jsonNode = JsonNode.Parse(content);
+        if (jsonNode is null)
+        {
+            LogError(loggerParams, "Couldn´t parse the json to a JsonNode", CallerInfos.Create());
+            return;
+        }
+
+        if (!_loggerSettings.DeactivateReflection)
+        {
+            Type dataType = typeof(TOutput);
+            if (dataType.CustomAttributes.Any())
+            {
+                foreach (PropertyInfo prop in dataType.GetProperties())
+                {
+                    foreach (Attribute attribute in prop.GetCustomAttributes())
+                    {
+                        Type attributeType = attribute.GetType();
+                        if (_filterAttributes.TryGetValue(attributeType, out Action<PropertyInfo, JsonNode>? action))
+                        {
+                            action(prop, jsonNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        string formatedJson = jsonNode.ToJsonString(new JsonSerializerOptions() { WriteIndented = true});
+        string msg = $"[{payloadType}]({httpRequestType}): {formatedJson}";
+
+        //Put the "{" into its own line
+        msg = msg.Insert(msg.IndexOf('{'), "\n");
+
+        Write(loggerParams, LogLevel.Debug, msg);
+    }
+
+    public void LogError(LoggerParams loggerParams, string exMsg, CallerInfos callerInfos)
+    {
+        Write(loggerParams, LogLevel.Error, exMsg, callerInfos);
     }
 
     /// <summary>

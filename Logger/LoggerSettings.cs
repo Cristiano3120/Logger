@@ -25,6 +25,13 @@ public sealed record LoggerSettings
     public bool DeactivateFileLogging { get; init; }
 
     /// <summary>
+    /// When set to <c>true</c>, properties will not be read via reflection. <br />
+    /// This may provide a slight performance improvement, 
+    /// but in most cases the effect is negligible.
+    /// </summary>
+    public bool DeactivateReflection { get; init; }
+
+    /// <summary>
     /// Gets the minimum log level for messages to be recorded by the logger.
     /// </summary>
     /// <remarks>Messages with a severity lower than this level are ignored. Adjust this property to control
