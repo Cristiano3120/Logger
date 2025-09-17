@@ -12,9 +12,16 @@ public partial class Logger
     private readonly string _currentFile = "";
     private readonly Dictionary<Type, Action<PropertyInfo, JsonNode>> _filterAttributes;
 
+    /// <summary>
+    /// Initializes the logger with default <see cref="LoggerSettings"/>
+    /// </summary>
     public Logger() : this(new LoggerSettings())
     { }
 
+    /// <summary>
+    /// Initializes a new instance of the Logger class using the specified logger settings.
+    /// </summary>
+    /// <param name="loggerSettings">The configuration settings to use for the logger. Cannot be null.</param>
     public Logger(LoggerSettings loggerSettings)
     {
         _loggerSettings = loggerSettings;
@@ -44,40 +51,6 @@ public partial class Logger
     public void AddAttributeToFilter<TAttribute>(Action<PropertyInfo, JsonNode> action) where TAttribute : Attribute
     {
         _filterAttributes[typeof(TAttribute)] = action;
-    }
-
-    private string MaintainLoggingSystem()
-    {
-        string pathToLoggingDic = _loggerSettings.PathToLogDirectory;
-    
-        if (!Directory.Exists(pathToLoggingDic))
-        {
-            _ = Directory.CreateDirectory(pathToLoggingDic);
-        }
-        else
-        {
-            string[] files = Directory.GetFiles(pathToLoggingDic, "*.md");
-
-            if (files.Length >= _loggerSettings.MaxAmmountOfLoggingFiles)
-            {
-                files = [.. files.OrderBy(File.GetCreationTime)];
-                // +1 to make room for a new File
-                int filesToRemove = files.Length - _loggerSettings.MaxAmmountOfLoggingFiles + 1;
-
-                for (int i = 0; i < filesToRemove; i++)
-                {
-                    File.Delete(files[i]);
-                }
-            }
-        }
-
-        string timestamp = DateTime.Now.ToString("dd-MM-yyyy/HH-mm-ss");
-        string pathToNewFile = Path.Combine(pathToLoggingDic, $"{timestamp}.md");
-
-        FileStream stream = File.Create(pathToNewFile);
-        stream.Dispose();
-
-        return pathToNewFile;
     }
 
     public void LogCallerInfos(LoggerParams loggerParams, CallerInfos callerInfos)
@@ -159,9 +132,30 @@ public partial class Logger
         Write(loggerParams, LogLevel.Debug, msg);
     }
 
-    public void LogError(LoggerParams loggerParams, string exMsg, CallerInfos callerInfos)
+    /// <summary>
+    /// Logs an error message using the specified logging parameters.
+    /// </summary>
+    /// <param name="loggerParams">The parameters that configure the logging behavior, such as log destination and formatting options. Cannot be
+    /// null.</param>
+    /// <param name="exMsg">The error message to log. Cannot be null or empty.</param>
+    /// <param name="callerInfos">Optional information about the caller, such as file name, line number, or member name. May be null.</param>
+    public void LogError(LoggerParams loggerParams, string exMsg, CallerInfos? callerInfos = null)
     {
         Write(loggerParams, LogLevel.Error, exMsg, callerInfos);
+    }
+
+    /// <summary>
+    /// Logs detailed information about an exception, including its message and stack trace, at the error level.
+    /// </summary>
+    /// <remarks>This method writes both the exception message and the full stack trace as separate
+    /// error-level log entries. Use this method to capture comprehensive error details for troubleshooting.</remarks>
+    /// <param name="loggerParams">The parameters that configure the logging behavior, such as log destination or formatting options.</param>
+    /// <param name="ex">The exception to log. Cannot be null.</param>
+    /// <param name="callerInfos">Optional information about the caller, such as the member name, file path, or line number. Can be null.</param>
+    public void LogError(LoggerParams loggerParams, Exception ex, CallerInfos? callerInfos = null)
+    {
+        Write(loggerParams, LogLevel.Error, $"EXCEPTION MSG: {ex.Message}", callerInfos);
+        Write(loggerParams, LogLevel.Error, $"STACKTRACE: {ex}", callerInfos);
     }
 
     /// <summary>
@@ -247,5 +241,39 @@ public partial class Logger
             LogLevel.Debug => _loggerSettings.DebugColor,
             _ => throw new NotImplementedException(),
         };
+    }
+
+    private string MaintainLoggingSystem()
+    {
+        string pathToLoggingDic = _loggerSettings.PathToLogDirectory;
+
+        if (!Directory.Exists(pathToLoggingDic))
+        {
+            _ = Directory.CreateDirectory(pathToLoggingDic);
+        }
+        else
+        {
+            string[] files = Directory.GetFiles(pathToLoggingDic, "*.md");
+
+            if (files.Length >= _loggerSettings.MaxAmmountOfLoggingFiles)
+            {
+                files = [.. files.OrderBy(File.GetCreationTime)];
+                // +1 to make room for a new File
+                int filesToRemove = files.Length - _loggerSettings.MaxAmmountOfLoggingFiles + 1;
+
+                for (int i = 0; i < filesToRemove; i++)
+                {
+                    File.Delete(files[i]);
+                }
+            }
+        }
+
+        string timestamp = DateTime.Now.ToString("dd-MM-yyyy/HH-mm-ss");
+        string pathToNewFile = Path.Combine(pathToLoggingDic, $"{timestamp}.md");
+
+        FileStream stream = File.Create(pathToNewFile);
+        stream.Dispose();
+
+        return pathToNewFile;
     }
 }

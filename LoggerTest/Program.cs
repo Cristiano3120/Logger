@@ -1,6 +1,5 @@
 ﻿using Cristiano3120.Logging;
 using System.Reflection;
-using System.Text.Json;
 
 namespace LoggerTest;
 
@@ -21,12 +20,6 @@ internal class Program
                 FilterAtrribute? filterAtrribute = prop.GetCustomAttribute<FilterAtrribute>();
                 _ = (jsonNode?[prop.Name] = filterAtrribute?.FilterSymbol);
             });
-
-            User user = new()
-            {
-                Name = "test",
-            };
-            logger.LogHttpPayload<User>(LoggerParams.None, PayloadType.Sent, HttpRequestType.Get, JsonSerializer.Serialize(user));
         }
     }
 }
