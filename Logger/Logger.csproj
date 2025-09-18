@@ -7,13 +7,19 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Nullable>enable</Nullable>
 
-		<PackageId>Logger</PackageId>
+		<PackageId>Cristiano3120.Logger</PackageId>
 		<Version>1.0.1</Version>
 		<Authors>Cristiano3120</Authors>
 		<Company></Company>
 		<Description>A moddern and customizable logging library.</Description>
 		<PackageTags>logging;utilities;csharp</PackageTags>
 		<RepositoryUrl>https://github.com/Cristiano3120/Logger/</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 
 </Project>
