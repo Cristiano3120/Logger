@@ -53,6 +53,12 @@ public partial class Logger
         _filterAttributes[typeof(TAttribute)] = action;
     }
 
+    /// <summary>
+    /// Logs detailed information about the calling method, including its name, source file, and line number, at the
+    /// debug log level.
+    /// </summary>
+    /// <param name="loggerParams">The logging configuration and context to use when writing the log entry.</param>
+    /// <param name="callerInfos">The information about the calling method, including its name, file path, and line number. Cannot be null.</param>
     public void LogCallerInfos(LoggerParams loggerParams, CallerInfos callerInfos)
     {
         string msg = $"[Caller]: {callerInfos.CallerName}() in {callerInfos.FilePath} at line {callerInfos.LineNum}";
@@ -93,7 +99,22 @@ public partial class Logger
     {
         Write(loggerParams, LogLevel.Warning, message, callerInfos);
     }
-
+    
+    /// <summary>
+    /// Logs the HTTP payload content at the debug level, formatting it as indented JSON and applying any
+    /// attribute-based filtering defined for the output type.
+    /// </summary>
+    /// <remarks>If the JSON content cannot be parsed, an error is logged and no payload is recorded. If
+    /// attribute-based filtering is enabled, properties of the output type decorated with recognized attributes may be
+    /// transformed or omitted in the logged output. The method is intended for diagnostic or debugging purposes and
+    /// should not be used to log sensitive information unless appropriate filtering is in place.</remarks>
+    /// <typeparam name="TOutput">The type representing the expected output. Used to determine which property attributes, if any, should be
+    /// applied for filtering or transformation before logging.</typeparam>
+    /// <param name="loggerParams">The parameters that control logging behavior, such as context or configuration for the logger.</param>
+    /// <param name="payloadType">The type of payload being logged. Used to categorize the log entry.</param>
+    /// <param name="httpRequestType">The HTTP request type (such as GET, POST, etc.) associated with the payload. Included in the log message for
+    /// context.</param>
+    /// <param name="content">The raw JSON content of the HTTP payload to be logged. Must be a valid JSON string.</param>
     public void LogHttpPayload<TOutput>(LoggerParams loggerParams, PayloadType payloadType, 
         HttpRequestType httpRequestType, string content)
     {
