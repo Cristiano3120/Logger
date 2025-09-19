@@ -1,10 +1,20 @@
 ﻿namespace Cristiano3120.Logging;
 
+/// <summary>
+/// Represents the configuration settings used to control logging behavior, output destinations, log file management,
+/// and message formatting for a logger.
+/// </summary>
+/// <remarks>Use this record to specify options such as the log directory path, maximum number of log files to
+/// retain, log level filtering, and console color customization for different message types. Disabling console or file
+/// logging, or adjusting reflection usage, can be configured to suit application requirements. All properties are
+/// immutable and should be set at initialization.</remarks>
 public sealed record LoggerSettings
 {
     /// <summary>
     /// Gets the path to the directory where log files are stored. <br></br>
-    /// <c>Default:</c> .../Logs
+    /// <c>Default:</c> .../Logs <br></br>
+    /// If you just use the default value the "Logs" folder will be placed in the current working directory <br></br>
+    /// <c>Example for Vs:</c> "C:\Users\Crist\source\repos\Logger\LoggerTest\bin\Debug\net10.0\Logs"
     /// </summary>
     public string PathToLogDirectory { get; init; } = "Logs";
 

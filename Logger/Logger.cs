@@ -5,6 +5,15 @@ using System.Text.Json.Nodes;
 
 namespace Cristiano3120.Logging;
 
+/// <summary>
+/// Provides functionality for logging messages, warnings, errors, and diagnostic information to files and the console,
+/// with support for configurable log levels, structured payload logging, and attribute-based filtering.
+/// </summary>
+/// <remarks>The Logger class supports flexible logging scenarios, including writing to both files and the
+/// console, and allows customization through LoggerSettings. It enables advanced features such as filtering or
+/// transforming logged data based on custom attributes applied to output types. Thread safety is ensured for file and
+/// console writes. Use this class to capture application events, errors, and diagnostic details in a structured and
+/// configurable manner.</remarks>
 public partial class Logger
 {
     private readonly Lock _lock = new();

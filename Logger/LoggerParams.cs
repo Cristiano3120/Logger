@@ -1,5 +1,11 @@
 ﻿namespace Cristiano3120.Logging;
 
+/// <summary>
+/// Specifies options for controlling logger output behavior.
+/// </summary>
+/// <remarks>This enumeration supports bitwise combination of its values to configure logging output. Use multiple
+/// flags to customize whether log messages are written to the console, to a file, and whether a newline character is
+/// appended after each message.</remarks>
 [Flags]
 public enum LoggerParams : byte
 {
