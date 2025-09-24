@@ -8,10 +8,10 @@
 		<Nullable>enable</Nullable>
 
 		<PackageId>Cristiano3120.Logger</PackageId>
-		<Version>1.0.3</Version>
+		<Version>1.0.4</Version>
 		<Authors>Cristiano3120</Authors>
 		<Company></Company>
-		<Description>A moddern and customizable logging library.</Description>
+		<Description>A modern and customizable logging library.</Description>
 		<PackageTags>logger;logging;utilities;csharp</PackageTags>
 		<RepositoryUrl>https://github.com/Cristiano3120/Logger/</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>

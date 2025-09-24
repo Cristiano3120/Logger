@@ -156,9 +156,13 @@ public partial class Logger
         string formatedJson = jsonNode.ToJsonString(new JsonSerializerOptions() { WriteIndented = true});
         string msg = $"[{payloadType}]({httpRequestType}): {formatedJson}";
 
-        //Put the "{" into its own line
-        msg = msg.Insert(msg.IndexOf('{'), "\n");
-
+        //If a "{" exists put it into its own line
+        int bracketIndex;
+        if ((bracketIndex = msg.IndexOf('{')) != -1)
+        {
+            msg = msg.Insert(bracketIndex, "\n");
+        }
+        
         Write(loggerParams, LogLevel.Debug, msg);
     }
 
