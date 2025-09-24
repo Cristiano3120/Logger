@@ -8,7 +8,7 @@
 		<Nullable>enable</Nullable>
 
 		<PackageId>Cristiano3120.Logger</PackageId>
-		<Version>1.0.4</Version>
+		<Version>1.0.5</Version>
 		<Authors>Cristiano3120</Authors>
 		<Company></Company>
 		<Description>A modern and customizable logging library.</Description>

@@ -108,7 +108,7 @@ public partial class Logger
     {
         Write(loggerParams, LogLevel.Warning, message, callerInfos);
     }
-    
+
     /// <summary>
     /// Logs the HTTP payload content at the debug level, formatting it as indented JSON and applying any
     /// attribute-based filtering defined for the output type.
@@ -124,7 +124,27 @@ public partial class Logger
     /// <param name="httpRequestType">The HTTP request type (such as GET, POST, etc.) associated with the payload. Included in the log message for
     /// context.</param>
     /// <param name="content">The raw JSON content of the HTTP payload to be logged. Must be a valid JSON string.</param>
-    public void LogHttpPayload<TOutput>(LoggerParams loggerParams, PayloadType payloadType, 
+    public void LogHttpPayload<TOutput>(
+        LoggerParams loggerParams, 
+        PayloadType payloadType,
+        HttpRequestType httpRequestType, 
+        string content)
+    {
+        LogHttpPayloadLogic(typeof(TOutput), loggerParams, payloadType, httpRequestType, content);
+    }
+
+    public void LogHttpPayload(
+        Type type,
+        LoggerParams loggerParams,
+        PayloadType payloadType,
+        HttpRequestType httpRequestType,
+        string content)
+    { 
+        LogHttpPayloadLogic(type, loggerParams, payloadType, httpRequestType, content);
+    }
+
+
+    private void LogHttpPayloadLogic(Type dataType, LoggerParams loggerParams, PayloadType payloadType,
         HttpRequestType httpRequestType, string content)
     {
         JsonNode? jsonNode = JsonNode.Parse(content);
@@ -134,26 +154,22 @@ public partial class Logger
             return;
         }
 
-        if (!_loggerSettings.DeactivateReflection)
+        if (!_loggerSettings.DeactivateReflection && dataType.CustomAttributes.Any())
         {
-            Type dataType = typeof(TOutput);
-            if (dataType.CustomAttributes.Any())
+            foreach (PropertyInfo prop in dataType.GetProperties())
             {
-                foreach (PropertyInfo prop in dataType.GetProperties())
+                foreach (Attribute attribute in prop.GetCustomAttributes())
                 {
-                    foreach (Attribute attribute in prop.GetCustomAttributes())
+                    Type attributeType = attribute.GetType();
+                    if (_filterAttributes.TryGetValue(attributeType, out Action<PropertyInfo, JsonNode>? action))
                     {
-                        Type attributeType = attribute.GetType();
-                        if (_filterAttributes.TryGetValue(attributeType, out Action<PropertyInfo, JsonNode>? action))
-                        {
-                            action(prop, jsonNode);
-                        }
+                        action(prop, jsonNode);
                     }
                 }
             }
         }
 
-        string formatedJson = jsonNode.ToJsonString(new JsonSerializerOptions() { WriteIndented = true});
+        string formatedJson = jsonNode.ToJsonString(new JsonSerializerOptions() { WriteIndented = true });
         string msg = $"[{payloadType}]({httpRequestType}): {formatedJson}";
 
         //If a "{" exists put it into its own line
@@ -162,7 +178,7 @@ public partial class Logger
         {
             msg = msg.Insert(bracketIndex, "\n");
         }
-        
+
         Write(loggerParams, LogLevel.Debug, msg);
     }
 
