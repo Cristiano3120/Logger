@@ -18,7 +18,7 @@ public partial class Logger
 {
     private readonly Lock _lock = new();
     private readonly LoggerSettings _loggerSettings;
-    private readonly string _currentFile = "";
+    private readonly string _currentFile;
     private readonly Dictionary<Type, Action<PropertyInfo, JsonNode>> _filterAttributes;
 
     /// <summary>
@@ -133,6 +133,21 @@ public partial class Logger
         LogHttpPayloadLogic(typeof(TOutput), loggerParams, payloadType, httpRequestType, content);
     }
 
+    /// <summary>
+    /// Logs the HTTP payload content at the debug level, formatting it as indented JSON and applying any
+    /// attribute-based filtering defined for the output type.
+    /// </summary>
+    /// <remarks>If the JSON content cannot be parsed, an error is logged and no payload is recorded. If
+    /// attribute-based filtering is enabled, properties of the output type decorated with recognized attributes may be
+    /// transformed or omitted in the logged output. The method is intended for diagnostic or debugging purposes and
+    /// should not be used to log sensitive information unless appropriate filtering is in place.</remarks>
+    /// <param name="type" >The type representing the expected output. Used to determine which property attributes, if any, should be
+    /// applied for filtering or transformation before logging</param>
+    /// <param name="loggerParams">The parameters that control logging behavior, such as context or configuration for the logger.</param>
+    /// <param name="payloadType">The type of payload being logged. Used to categorize the log entry.</param>
+    /// <param name="httpRequestType">The HTTP request type (such as GET, POST, etc.) associated with the payload. Included in the log message for
+    /// context.</param>
+    /// <param name="content">The raw JSON content of the HTTP payload to be logged. Must be a valid JSON string.</param>
     public void LogHttpPayload(
         Type type,
         LoggerParams loggerParams,
@@ -142,7 +157,6 @@ public partial class Logger
     { 
         LogHttpPayloadLogic(type, loggerParams, payloadType, httpRequestType, content);
     }
-
 
     private void LogHttpPayloadLogic(Type dataType, LoggerParams loggerParams, PayloadType payloadType,
         HttpRequestType httpRequestType, string content)
@@ -206,6 +220,35 @@ public partial class Logger
     {
         Write(loggerParams, LogLevel.Error, $"EXCEPTION MSG: {ex.Message}", callerInfos);
         Write(loggerParams, LogLevel.Error, $"STACKTRACE: {ex}", callerInfos);
+    }
+
+    /// <summary>
+    /// Logs detailed information about an exception, including its message and stack trace, at the error level.
+    /// </summary>
+    /// <param name="loggerParams"></param>
+    /// <param name="msg"></param>
+    /// <param name="callerInfos">The method that called the calle</param>
+    /// <param name="calleInfos">The method that called this method</param>
+    public void LogError(LoggerParams loggerParams, string msg, CallerInfos callerInfos, CallerInfos calleInfos)
+    {
+        LogCallerInfos(LoggerParams.NoNewLine, callerInfos);
+        Write(loggerParams, LogLevel.Error, $"[Calle(threw the ex)]: {calleInfos.CallerName}() in {calleInfos.FilePath} at line {calleInfos.LineNum}");
+        Write(loggerParams, LogLevel.Error, $"EXCEPTION MSG: {msg}");
+    }
+
+    /// <summary>
+    /// Logs detailed information about an exception, including its message and stack trace, at the error level.
+    /// </summary>
+    /// <param name="loggerParams"></param>
+    /// <param name="ex">The exception that was thrown</param>
+    /// <param name="callerInfos">The method that called the calle</param>
+    /// <param name="calleInfos">The method that called this method</param>
+    public void LogError(LoggerParams loggerParams, Exception ex, CallerInfos callerInfos, CallerInfos calleInfos)
+    {
+        LogCallerInfos(LoggerParams.NoNewLine, callerInfos);
+        Write(loggerParams, LogLevel.Error, $"[Calle(threw the ex)]: {calleInfos.CallerName}() in {calleInfos.FilePath} at line {calleInfos.LineNum}");
+        Write(loggerParams, LogLevel.Error, $"EXCEPTION MSG: {ex.Message}");
+        Write(loggerParams, LogLevel.Error, $"{ex}");
     }
 
     /// <summary>
